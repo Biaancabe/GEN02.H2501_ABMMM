@@ -1,11 +1,11 @@
 ## Installation of Hugging Face Transformers library
-pip install transformers
+# pip install transformers
 
 ## Installiere FAISS (Für die Vektor-Suche, falls du die Retrieval-Komponente implementieren möchtest)
-pip install faiss-cpu
+# pip install faiss-cpu
 
 ## Optional: Installiere Sentence-Transformers für die Vektorisierung der Dokumente
-pip install sentence-transformers
+# pip install sentence-transformers
 
 ####################################
 ## 2. Laden des RAG-Token-Modells ##
@@ -49,6 +49,12 @@ import numpy as np
 
 # Schritt 1: Lade den Sentence-Transformer
 sentence_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+
+from PyPDF2 import PdfReader
+
+reader = PdfReader("LIA01 - Lecture Notes.pdf")
+text = "\n".join(page.extract_text() for page in reader.pages)
+documents = text.split("\n\n")
 
 # Schritt 2: Dokumente vorbereiten
 documents = [
