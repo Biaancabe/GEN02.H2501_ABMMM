@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig authType="PASSWORD" connectionConfig="{&quot;proxyParams&quot;:{&quot;proxyHost&quot;:&quot;hs25-047.pds.ls.eee.intern&quot;,&quot;proxyPort&quot;:8501,&quot;proxyType&quot;:&quot;NO_PROXY&quot;}}" host="hs25-047.pds.ls.eee.intern" id="fba5f2b3-96c5-4d4f-8278-fa34a42e3122" port="8051" nameFormat="DESCRIPTIVE" username="cip" useOpenSSHConfig="true" />
+    </configs>
+  </component>
+</project>
