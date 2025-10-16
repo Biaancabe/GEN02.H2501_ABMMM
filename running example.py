@@ -4,6 +4,8 @@ from pathlib import Path
 import numpy as np
 import streamlit as st
 from pypdf import PdfReader
+# import pdfplumber
+# from pdf2image import convert_from_path -- uncomment when using
 from sentence_transformers import SentenceTransformer
 import faiss
 
@@ -33,10 +35,25 @@ def chunk_text(text: str, size=1000, overlap=150):
 def extract_from_pdf(path: Path) -> str:
     try:
         reader = PdfReader(str(path))
+        # reader = pl(str(path))
         return "\n".join((page.extract_text() or "") for page in reader.pages)
     except Exception as e:
         st.warning(f"PDF konnte nicht gelesen werden ({path.name}): {e}")
         return ""
+
+''' # Text extraction with OCR fallback logic -- draft (when using uncomment import 'from pdf2image import convert_from_path')
+def extract_from_pdf_OCR(path: Path) -> str:
+    try:
+        reader = PdfReader(str(path))
+        text = "\n".join((page.extract_text() or "") for page in reader.pages)
+        if len(text.strip()) < 20:  # fallback if mostly empty or garbled
+            raise ValueError("Extracted text seems empty or corrupted — using OCR fallback.")
+        return text
+    except Exception as e:
+        images = convert_from_path(path)
+        ocr_text = "\n".join(pytesseract.image_to_string(img) for img in images)
+        return ocr_text
+'''
 
 def extract_from_txt(path: Path) -> str:
     try:
