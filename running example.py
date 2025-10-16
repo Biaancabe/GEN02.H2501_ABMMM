@@ -89,7 +89,6 @@ def load_retriever():
         for line in f:
             obj = json.loads(line)
             texts.append(obj["text"]); metas.append(obj["meta"])
-    texts = np.array(texts, dtype=object)
     return model, index, (texts, metas)
 
 def search(query: str, k=5):
@@ -102,7 +101,7 @@ def search(query: str, k=5):
     scores, idx = index.search(q, k)
     hits = []
     for s, i in zip(scores[0], idx[0]):
-        hits.append({"text": texts[i].item(), "score": float(s), "meta": metas[i]})
+        hits.append({"text": texts[i], "score": float(s), "meta": metas[i]})
     return hits
 
 def summarize_with_llm(question: str, hits: list) -> str:
