@@ -21,7 +21,7 @@ Upload your lecture slides, PDFs, or notes, then get started with questions. Stu
 - 📁 **Place your study files** in the folder: `data/raw`  
 - 💻 **Open your terminal** then type the following command to launch the app using the path of the script  
     ```bash
-    streamlit run "C:\Users\...\running example.py"
+    streamlit run "C:\Users\...\filename.py"
     ```
 
 
