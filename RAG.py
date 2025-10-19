@@ -1,37 +1,119 @@
-from pathlib import Path
 import os, json, time
 from pathlib import Path
 import numpy as np
 import streamlit as st
 from pypdf import PdfReader
+import fitz  # PyMuPDF --> recognizes line break in a pdf
 from sentence_transformers import SentenceTransformer
-import faiss
+import faiss #(Facebook AI Similarity Search)
+import re
 
 # ---- Directories ----
 
-RAW_DIR = Path("data/raw"); RAW_DIR.mkdir(parents=True, exist_ok=True)
-IDX_DIR = Path("data/index"); IDX_DIR.mkdir(parents=True, exist_ok=True)
-EMB_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-TEXTS_PATH = IDX_DIR / "texts.jsonl"
-INDEX_PATH = IDX_DIR / "faiss.index"
-USE_LOCAL_LLM = True
+RAW_DIR = Path("data/raw"); RAW_DIR.mkdir(parents=True, exist_ok=True) #Directory for PDF
+IDX_DIR = Path("data/index"); IDX_DIR.mkdir(parents=True, exist_ok=True) #Directory for indexed file
+EMB_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2" # Embedding model
+TEXTS_PATH = IDX_DIR / "texts.jsonl" #Directory for text chunks
+INDEX_PATH = IDX_DIR / "faiss.index" #Directory for FAISS text
+USE_LOCAL_LLM = True #Use of local LLM
+
+P_MARK = re.compile(r"^---\s*<P:(\d+)\.(\d+)>\s*---\s*$")
+MIN_CHUNK_WORDS = 10
+
 
 
 # ---- File loading ----
 
-def chunk_text(text: str, size=200, overlap=20):
-    """Split text into overlapping chunks of roughly `size` words."""
+def chunk_text(text: str, size=200, overlap=0.2):
+    """
+    Split text into overlapping chunks of roughly `size` words.
+    in evaluate_chunk_sizes_on_data it is tested with different chunk sizes.
+    in Build index: the chosen sizue will be used
+    Overlap is proportional to chunk size: 20%
+    """
     words = text.split()
-    out, i = [], 0
-    while i < len(words):
-        out.append(" ".join(words[i:i+size]))
-        i += max(1, size - overlap)
+    size = int(max(1, round(size)))
+    step = int(max(1, round(size * (1 - overlap))))  # z.B. 20% Overlap
+    out, i, n = [], 0, len(words)
+    while i < n:
+        j = min(n, i + size)
+        out.append(" ".join(words[i:j]))
+        i += step
     return out
 
 def extract_from_pdf(path: Path) -> str:
+    """
+    Imports PDF file with PDFReader and concatenates the text.
+    """
     try:
         reader = PdfReader(str(path))
         return "\n".join((page.extract_text() or "") for page in reader.pages)
+        #for each page extract_text function, when None then "".
+        # all pages are being concatenated with a line break
+    except Exception as e: #error warning
+        st.warning(f"PDF could not be read ({path.name}): {e}")
+        return ""
+
+def extract_paragraphs_with_pymupdf(path: Path) -> list[dict]:
+    """
+    Liefert Absätze (zusammengeführte Blöcke) als Liste von Dicts:
+    {"page": int, "block": int, "text": str}
+    """
+    paras = []
+    MIN_WORDS_TO_STANDALONE = 6     # kurze Begriffe/Überschriften werden angehängt
+    MAX_VERTICAL_GAP = 12           # px: enger Abstand => eher zusammengehörig
+
+    with fitz.open(str(path)) as doc:
+        for page_num, page in enumerate(doc, start=1):
+            blocks = page.get_text("blocks")
+            blocks = sorted(blocks, key=lambda b: (round(b[1], 1), round(b[0], 1)))
+
+            merged = []
+            prev = None  # dict: {page, block, text, y1}
+
+            for b in blocks:
+                x0, y0, x1, y1, text, block_no = b[:6]
+                text = (text or "").strip()
+                if not text:
+                    continue
+
+                # optional: nur Textblöcke behalten (falls verfügbar)
+                if len(b) > 6 and b[6] != 0:
+                    continue
+
+                if prev is None:
+                    prev = {"page": page_num, "block": int(block_no), "text": text, "y1": y1}
+                    continue
+
+                small_prev = len(prev["text"].split()) < MIN_WORDS_TO_STANDALONE
+                looks_like_term = prev["text"].endswith(":") or prev["text"].istitle()
+                small_gap = (y0 - prev["y1"]) <= MAX_VERTICAL_GAP
+
+                # Merge-Heuristik: Glossar-Begriff + Definition, enger Abstand, sehr kurze Überschrift
+                if small_prev or looks_like_term or small_gap:
+                    prev["text"] = (prev["text"].rstrip(":") + ": " + text).strip()
+                    prev["y1"] = y1
+                else:
+                    merged.append({k: prev[k] for k in ("page", "block", "text")})
+                    prev = {"page": page_num, "block": int(block_no), "text": text, "y1": y1}
+
+            if prev:
+                merged.append({k: prev[k] for k in ("page", "block", "text")})
+
+            paras.extend(merged)
+
+    return paras
+
+
+def extract_from_pdf_paragraphs(path: Path) -> str:
+    """
+    Verbindet Absätze mit einem klaren Trenner (doppelter Umbruch + Marker).
+    """
+    try:
+        paras = extract_paragraphs_with_pymupdf(path)
+        if not paras:
+            return ""
+        return "\n\n".join(f"--- <P:{p['page']}.{p['block']}> ---\n{p['text']}" for p in paras)
     except Exception as e:
         st.warning(f"PDF could not be read ({path.name}): {e}")
         return ""
@@ -48,7 +130,7 @@ def load_documents():
     docs = []
     for p in RAW_DIR.glob("*"):
         if p.suffix.lower() == ".pdf":
-            txt = extract_from_pdf(p)
+            txt = extract_from_pdf_paragraphs(p)
         elif p.suffix.lower() in [".txt", ".md"]:
             txt = extract_from_txt(p)
         else:
@@ -75,7 +157,7 @@ def analyze_text_lengths():
     }
     return stats
 
-def evaluate_chunk_sizes_on_data(sizes=[100, 200, 300, 400], sample_frac=0.3):
+def evaluate_chunk_sizes_on_data(sizes=[30, 40, 50,60,80,100,120,160,200,240], sample_frac=0.3):
     model = SentenceTransformer(EMB_MODEL_NAME)
     docs = load_documents()
     if not docs:
@@ -116,10 +198,61 @@ def auto_select_chunk_size():
 def build_index(chunk_size=200, overlap=20):
     model = SentenceTransformer(EMB_MODEL_NAME)
     texts, metas = [], []
+
     for name, full in load_documents():
-        for ci, ch in enumerate(chunk_text(full, size=chunk_size, overlap=overlap)):
-            texts.append(ch)
-            metas.append({"doc": name, "chunk": ci})
+        # Split an Absatz-Markern, damit Chunks nicht über Absätze hinweg gehen
+        paragraphs = [p for p in full.split("\n\n") if p.strip()]
+
+        current_page, current_block = None, None
+        for para in paragraphs:
+            # Marker erkennen (erste Zeile)
+            first_line, *rest = para.splitlines()
+            m = P_MARK.match(first_line.strip())
+            if m:
+                current_page, current_block = int(m.group(1)), int(m.group(2))
+                para_text = "\n".join(rest).strip()
+            else:
+                para_text = para.strip()
+
+            # Absatz weiter in Wort-Chunks teilen (size/overlap) – mit Mindestlängen-Puffer
+            buffer_words = []
+            for ch in chunk_text(para_text, size=chunk_size, overlap=overlap):
+                w = ch.split()
+                # Wenn bisher + aktueller Chunk noch zu kurz ist, erstmal sammeln
+                if len(buffer_words) + len(w) < MIN_CHUNK_WORDS:
+                    buffer_words.extend(w)
+                    continue
+
+                # Genug Wörter: ggf. Puffer mergen und schreiben
+                if buffer_words:
+                    w = buffer_words + w
+                    buffer_words = []
+                merged = " ".join(w)
+
+                # Eindeutige Chunk-ID (optional: statt ci, damit über Absätze hinweg fortlaufend)
+                chunk_id = len(texts)
+
+                texts.append(merged)
+                metas.append({
+                    "doc": name,
+                    "chunk": chunk_id,
+                    "page": current_page,
+                    "block": current_block,
+                })
+
+            # Rest am Absatzende wegschreiben (falls noch Wörter im Puffer übrig sind)
+            if buffer_words:
+                merged = " ".join(buffer_words)
+                chunk_id = len(texts)
+                texts.append(merged)
+                metas.append({
+                    "doc": name,
+                    "chunk": chunk_id,
+                    "page": current_page,
+                    "block": current_block,
+                })
+                buffer_words = []
+
     if not texts:
         raise RuntimeError("No documents found. Place PDFs or .txt in data/raw.")
     embs = model.encode(texts, convert_to_numpy=True, show_progress_bar=True, normalize_embeddings=True)
@@ -164,7 +297,7 @@ def summarize_with_llm(question: str, hits: list) -> str:
         return f"Top relevant context (extract):\n{snippet}"
     try:
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
-        model_id = "google/flan-t5-small"
+        model_id = "google/flan-t5-base"
         tok = AutoTokenizer.from_pretrained(model_id)
         mdl = AutoModelForSeq2SeqLM.from_pretrained(model_id)
         nlp = pipeline("text2text-generation", model=mdl, tokenizer=tok)
@@ -192,6 +325,7 @@ with colB:
 
     if st.button("🔁 Rebuild index"):
         size = st.session_state.get("best_chunk_size", 200)
+            #Saves the optimal chunk size when clicking on button "Auto-select optimal chunk size
         with st.spinner(f"Build index (chunk size {size})…"):
             try:
                 n = build_index(chunk_size=size)
@@ -216,6 +350,14 @@ with colA:
         st.markdown("---")
         st.subheader("Sources")
         for h in hits:
-            doc = h["meta"]["doc"]; ch = h["meta"]["chunk"]; sc = h["score"]
-            with st.expander(f"{doc} — chunk {ch} (score {sc:.3f})", expanded=False):
+            meta = h["meta"]
+            doc = meta.get("doc")
+            ch = meta.get("chunk")
+            pg = meta.get("page")
+            blk = meta.get("block")
+            sc = h["score"]
+            label = f"{doc} — chunk {ch} (score {sc:.3f})"
+            if pg is not None and blk is not None:
+                label = f"{label} — page {pg}, block {blk}"
+            with st.expander(label, expanded=False):
                 st.write(h["text"])
