@@ -1,12 +1,25 @@
 import os, json, time
 from pathlib import Path
-import numpy as np
+import numpy as npc
 import streamlit as st
 from pypdf import PdfReader
 import fitz  # PyMuPDF --> recognizes line break in a pdf
 from sentence_transformers import SentenceTransformer
 import faiss #(Facebook AI Similarity Search)
 import re
+
+import kpi_logger # load module
+from datetime import datetime
+
+# log app start
+kpi_logger.log_metrics(
+    query="__app_start__",
+    response_latency=0.0,
+    retrieval_latency=0.0,
+    inter_chunk_sim=0.0
+)
+print(f"[{datetime.now().isoformat()}] Metrics logger initialized.")
+
 
 # ---- Directories ----
 
@@ -282,14 +295,26 @@ def search(query: str, k=5):
     model, index, store = load_retriever()
     if model is None:
         st.warning("No index found. Please rebuild index first.")
-        return []
+        return [], 0.0, None  # hits, retrieval_time, hit_embs
+
     texts, metas = store
+
+    t0 = time.time()
     q = model.encode([query], convert_to_numpy=True, normalize_embeddings=True)
     scores, idx = index.search(q, k)
-    hits = []
+    retrieval_time = time.time() - t0
+
+    hits, hit_texts = [], []
     for s, i in zip(scores[0], idx[0]):
         hits.append({"text": texts[i], "score": float(s), "meta": metas[i]})
-    return hits
+        hit_texts.append(texts[i])
+
+    hit_embs = None
+    if hit_texts:
+        hit_embs = model.encode(hit_texts, convert_to_numpy=True, normalize_embeddings=True)
+
+    return hits, retrieval_time, hit_embs
+
 
 def summarize_with_llm(question: str, hits: list) -> str:
     if not USE_LOCAL_LLM:
@@ -341,12 +366,31 @@ with colA:
     k = st.slider("How many text snippets to display (Top-k) (Top-k)", 3, 8, 5)
 
     if q:
-        hits = search(q, k=k)
+        from kpi_logger import log_metrics, compute_inter_chunk_similarity
+
+        # Start total timer
+        t_start = time.time()
+
+        # Retrieve results + embeddings
+        hits, retrieval_time, hit_embs = search(q, k=k)
         if not hits:
             st.stop()
+
+        # Generate answer
         with st.expander("💡 Answer", expanded=True):
             ans = summarize_with_llm(q, hits)
             st.write(ans)
+
+        # Stop total timer
+        response_latency = time.time() - t_start
+
+        # Compute average inter-chunk similarity (redundancy)
+        inter_chunk_sim = compute_inter_chunk_similarity(hit_embs)
+
+        # log metrics to CSV
+        log_metrics(q, response_latency, retrieval_time, inter_chunk_sim)
+
+        # Display retrieved sources
         st.markdown("---")
         st.subheader("Sources")
         for h in hits:
@@ -361,3 +405,4 @@ with colA:
                 label = f"{label} — page {pg}, block {blk}"
             with st.expander(label, expanded=False):
                 st.write(h["text"])
+
