@@ -53,5 +53,6 @@ GEN02.H2501_ABMMM/
 ├── analyze_kpi.py      # Create simple plots for visualizing purposes
 ├── data/
 │   ├── raw/            # Place your PDFs or TXT files here
+|   ├── test/           # Here you find several test documents that were used to assess the KPIs
 │   └── index/          # Generated embeddings and FAISS index
 └── requirements.txt    # Python dependencies
