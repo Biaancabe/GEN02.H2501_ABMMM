@@ -16,13 +16,39 @@ Upload your lecture slides, PDFs, or notes, then get started with questions. Stu
 - 🧠 **RAG-powered Intelligence:** Combines document retrieval with generative AI.  
 - 🧩 **Extensible:** Add summaries, flashcards, or quiz modules later.
 
+##  🏗️  Setup Instructions
+
+### 1) Clone the repository
+```bash
+git clone https://github.com/yourusername/study-buddy.git
+cd study-buddy
+```
+
+### 2) Create and activate a virtual environment
+```bash
+python -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
+```
+
+### 3) Install dependencies
+```bash
+pip install -r requirements.txt
+```
 ## 🚀 Get Started
 
 - 📁 **Place your study files** in the folder: `data/raw`  
+
 - 💻 **Open your terminal** then type the following command to launch the app using the path of the script  
     ```bash
-    streamlit run "C:\Users\...\filename.py"
+    streamlit run "C:\Users\...\RAG.py"
     ```
+## 🧱 Project Structure
 
-
-
+```plaintext
+study-buddy/
+├── app.py              # Main Streamlit application
+├── kpi_logger.py       # Logging helper for performance metrics
+├── data/
+│   ├── raw/            # Place your PDFs or TXT files here
+│   └── index/          # Generated embeddings and FAISS index
+└── requirements.txt    # Python dependencies
