@@ -47,8 +47,8 @@ pip install -r requirements.txt
 ## 🧱 Project Structure
 
 ```plaintext
-study-buddy/
-├── app.py              # Main Streamlit application
+GEN02.H2501_ABMMM/
+├── RAG.py              # Main Streamlit application
 ├── kpi_logger.py       # Logging helper for performance metrics
 ├── data/
 │   ├── raw/            # Place your PDFs or TXT files here
