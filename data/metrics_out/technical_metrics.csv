@@ -1,0 +1,6 @@
+timestamp,query,response_latency_s,retrieval_latency_s,avg_inter_chunk_similarity
+2025-10-25T08:32:19.460085,__app_start__,0.0,0.0,0.0
+2025-10-25T08:35:14.707982,__app_start__,0.0,0.0,0.0
+2025-10-25T08:45:16.910579,__app_start__,0.0,0.0,0.0
+2025-10-25T09:07:59.224224,__app_start__,0.0,0.0,0.0
+2025-10-25T09:08:12.624717,Stationarity,13.3834,0.0211,0.601151
