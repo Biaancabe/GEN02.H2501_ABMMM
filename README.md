@@ -10,24 +10,26 @@ Upload your lecture slides, PDFs, or notes, then get started with questions. Stu
 
 ## ✨ Features
 
-- 📚 **Document Uploads:** PDFs, text files, lecture notes — I take it all.  
-- 🔎 **Smart Search:** Uses semantic similarity (fancy word for “it gets what you mean”).  
-- 💬 **Chat Interface:** Ask questions, get answers that actually make sense.  
-- 🧠 **RAG-powered Intelligence:** Combines document retrieval with generative AI.  
-- 🧩 **Extensible:** Add summaries, flashcards, or quiz modules later.
+- 📚 Upload your study materials — PDFs, text files, and lecture notes.
+- ✂️ Smart text chunking with automatic size optimization for better retrieval.
+- 🧠 Semantic embeddings via all-MiniLM-L6-v2 for meaning-based search.
+- ⚡ Fast retrieval powered by FAISS vector similarity search.
+- 💬 Local Q&A using Flan-T5, fully offline and privacy-safe.
+- 🧮 Streamlit interface for interactive querying and viewing sources.
+- 📊 Performance logging for response time and retrieval quality.
 
 ##  🏗️  Setup Instructions
 
 ### 1) Clone the repository
 ```bash
-git clone https://github.com/yourusername/study-buddy.git
-cd study-buddy
+git clone https://github.com/Biaancabe/GEN02.H2501_ABMMM.git
+cd GEN02.H2501_ABMMM
 ```
 
 ### 2) Create and activate a virtual environment
 ```bash
 python -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
+source venv/bin/activate   # On Windows (Git Bash): venv/Scripts/activate 
 ```
 
 ### 3) Install dependencies
@@ -38,16 +40,17 @@ pip install -r requirements.txt
 
 - 📁 **Place your study files** in the folder: `data/raw`  
 
-- 💻 **Open your terminal** then type the following command to launch the app using the path of the script  
+- 💻 **Open your terminal** navigate to you folder GEN02.H2501_ABMMM then type the following command to launch the app using the path of the script. Side note: This will take some time. 
     ```bash
-    streamlit run "C:\Users\...\RAG.py"
+    streamlit run RAG.py
     ```
 ## 🧱 Project Structure
 
 ```plaintext
-study-buddy/
-├── app.py              # Main Streamlit application
+GEN02.H2501_ABMMM/
+├── RAG.py              # Main Streamlit application
 ├── kpi_logger.py       # Logging helper for performance metrics
+├── analyze_kpi.py      # Create simple plots for visualizing purposes
 ├── data/
 │   ├── raw/            # Place your PDFs or TXT files here
 │   └── index/          # Generated embeddings and FAISS index
