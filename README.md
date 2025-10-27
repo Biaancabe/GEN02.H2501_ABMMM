@@ -50,6 +50,7 @@ pip install -r requirements.txt
 GEN02.H2501_ABMMM/
 ├── RAG.py              # Main Streamlit application
 ├── kpi_logger.py       # Logging helper for performance metrics
+├── analyze_kpi.py      # Create simple plots for visualizing purposes
 ├── data/
 │   ├── raw/            # Place your PDFs or TXT files here
 │   └── index/          # Generated embeddings and FAISS index
