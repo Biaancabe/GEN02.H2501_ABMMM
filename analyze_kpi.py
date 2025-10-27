@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Path to Excel file
-INPUT_XLSX = Path("data/metrics/technical_metrics_all.xlsx")
+INPUT_XLSX = Path("data/metrics/technical_metrics.csv")
 
 # Output directory for charts and summary tables
 OUT_DIR = Path("data/metrics_out")
@@ -21,7 +21,7 @@ TARGET_RESPONSE_S  = 3.0   # seconds
 TARGET_RETRIEVAL_S = 1.0   # seconds
 
 # Read the Excel file and normalize column names
-df = pd.read_excel(INPUT_XLSX, engine="openpyxl")
+df = pd.read_csv(INPUT_XLSX)
 df.columns = [str(c).strip().lower().replace(" ", "_") for c in df.columns]
 
 # Check required columns exist
