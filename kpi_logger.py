@@ -1,21 +1,8 @@
 
-import time
-import numpy as np
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
-def compute_inter_chunk_similarity(embs: np.ndarray) -> float:
-    """Compute average cosine similarity between embeddings (redundancy metric)."""
-    if embs.shape[0] < 2:
-        return 0.0
-
-    # Compute the cosine similarity matrix (dot product, assuming normalized embeddings)
-    sims = np.dot(embs, embs.T)
-    n = sims.shape[0]
-
-    # Exclude self-similarity terms (the diagonal) when averaging
-    return float((np.sum(sims) - n) / (n*n - n))
 
 def log_metrics(query: str, response_latency: float, retrieval_latency: float, inter_chunk_sim: float):
     """Append a row with latency + similarity metrics to a CSV log."""
