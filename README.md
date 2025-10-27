@@ -54,5 +54,6 @@ GEN02.H2501_ABMMM/
 ├── data/
 │   ├── raw/            # Place your PDFs or TXT files here
 |   ├── test/           # Here you find several test documents that were used to assess the KPIs
+|   ├── metrics/        # Here you find our KPI evaluations
 │   └── index/          # Generated embeddings and FAISS index
 └── requirements.txt    # Python dependencies
