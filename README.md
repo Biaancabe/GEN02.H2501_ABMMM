@@ -48,13 +48,14 @@ pip install -r requirements.txt
 
 ```plaintext
 GEN02.H2501_ABMMM/
-├── RAG.py              # Main Streamlit application
-├── kpi_logger.py       # Logging helper for performance metrics
-├── analyze_kpi.py      # Create simple plots for visualizing purposes
+├── RAG.py                              # Main Streamlit application
+├── kpi_logger.py                       # Logging helper for performance metrics
+├── analyze_kpi.py                      # Create simple plots for visualizing purposes
+├── Generative AI - Presentation.pptx   # Learn more about our project and findings
 ├── data/
-│   ├── raw/            # Place your PDFs or TXT files here
-|   ├── test/           # Here you find several test documents that were used to assess the KPIs
-|   ├── metrics/        # Here you find our KPI evaluations
-|   ├── metrics_out/    # Here you find the output of our KPI evaluations
-│   └── index/          # Generated embeddings and FAISS index
-└── requirements.txt    # Python dependencies
+│   ├── raw/                            # Place your PDFs or TXT files here
+|   ├── test/                           # Here you find several test documents that were used to assess the KPIs
+|   ├── metrics/                        # Here you find our KPI evaluations
+|   ├── metrics_out/                    # Here you find the output of our KPI evaluations
+│   └── index/                          # Generated embeddings and FAISS index
+└── requirements.txt                    # Python dependencies
